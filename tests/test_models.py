@@ -51,6 +51,17 @@ def test_processing_job_status_is_mutable():
     assert job.status == "processing"
 
 
+def test_processing_job_rejects_invalid_status_on_assignment():
+    job = ProcessingJob(file_path="/tmp/doc.pdf", file_type="pdf")
+    with pytest.raises(ValidationError):
+        job.status = "invalid"
+
+
+def test_processing_job_rejects_empty_file_type():
+    with pytest.raises(ValidationError):
+        ProcessingJob(file_path="/tmp/doc.pdf", file_type="")
+
+
 def test_processing_job_json_roundtrip():
     job = ProcessingJob(file_path="/tmp/doc.pdf", file_type="pdf")
     data = job.model_dump_json()
@@ -148,6 +159,11 @@ def test_reconciled_document_rejects_unparseable_date():
         ReconciledDocument(markdown="text", document_date="not-a-date")
 
 
+def test_reconciled_document_rejects_non_string_date():
+    with pytest.raises(ValidationError, match="Cannot parse date from int"):
+        ReconciledDocument(markdown="text", document_date=12345)
+
+
 # --- Classification ---
 
 
@@ -160,8 +176,24 @@ def test_classification_creates_with_required_fields():
 
 @pytest.mark.parametrize("field", ["recipient", "category", "subject"])
 def test_classification_rejects_empty_strings(field):
-    kwargs = {"recipient": "Alice", "category": "invoices", "subject": "Water bill"}
+    kwargs = {
+        "recipient": "Alice",
+        "category": "invoices",
+        "subject": "Water bill",
+    }
     kwargs[field] = ""
+    with pytest.raises(ValidationError):
+        Classification(**kwargs)
+
+
+@pytest.mark.parametrize("field", ["recipient", "category", "subject"])
+def test_classification_rejects_whitespace_only_strings(field):
+    kwargs = {
+        "recipient": "Alice",
+        "category": "invoices",
+        "subject": "Water bill",
+    }
+    kwargs[field] = "   "
     with pytest.raises(ValidationError):
         Classification(**kwargs)
 
@@ -223,6 +255,18 @@ def test_processed_document_accepts_string_paths():
     )
     assert isinstance(doc.original_path, Path)
     assert isinstance(doc.output_path, Path)
+
+
+def test_processed_document_parses_date_string():
+    cls = Classification(recipient="Alice", category="invoices", subject="Bill")
+    doc = ProcessedDocument(
+        original_path="/tmp/doc.pdf",
+        output_path="/tmp/output/doc.md",
+        markdown="# Bill",
+        classification=cls,
+        document_date="15/03/2024",
+    )
+    assert doc.document_date == date(2024, 3, 15)
 
 
 def test_processed_document_json_roundtrip():

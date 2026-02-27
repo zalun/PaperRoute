@@ -7,11 +7,16 @@ ProcessingJob → OCRResult + VisionResult → ReconciledDocument
 
 from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-_DATE_FORMATS = ("%d/%m/%Y", "%m/%d/%Y", "%d.%m.%Y")
+# Slash-separated dates are interpreted as European (dd/mm/YYYY).
+# US month-first format is excluded to avoid silent misinterpretation
+# of ambiguous dates like "03/04/2024".
+_DATE_FORMATS = ("%d/%m/%Y", "%d.%m.%Y")
+
+Confidence = Annotated[float, Field(ge=0.0, le=1.0)]
 
 
 def _parse_date(value: object) -> date | None:
@@ -35,8 +40,10 @@ def _parse_date(value: object) -> date | None:
 
 
 class ProcessingJob(BaseModel):
+    model_config = ConfigDict(validate_assignment=True)
+
     file_path: Path
-    file_type: str
+    file_type: str = Field(min_length=1)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     status: Literal["pending", "processing", "done", "failed"] = "pending"
 
@@ -49,15 +56,7 @@ class PageText(BaseModel):
 class OCRResult(BaseModel):
     text: str
     pages: list[PageText]
-    confidence: float | None = None
-
-    @field_validator("confidence")
-    @classmethod
-    def confidence_in_range(cls, v: float | None) -> float | None:
-        if v is not None and not (0.0 <= v <= 1.0):
-            msg = "Confidence must be between 0.0 and 1.0"
-            raise ValueError(msg)
-        return v
+    confidence: Confidence | None = None
 
 
 class VisionResult(BaseModel):
@@ -82,14 +81,14 @@ class Classification(BaseModel):
     recipient: str = Field(min_length=1)
     category: str = Field(min_length=1)
     subject: str = Field(min_length=1)
-    confidence: float | None = None
+    confidence: Confidence | None = None
     reasoning: str | None = None
 
-    @field_validator("confidence")
+    @field_validator("recipient", "category", "subject")
     @classmethod
-    def confidence_in_range(cls, v: float | None) -> float | None:
-        if v is not None and not (0.0 <= v <= 1.0):
-            msg = "Confidence must be between 0.0 and 1.0"
+    def must_not_be_blank(cls, v: str) -> str:
+        if not v.strip():
+            msg = "Field must not be blank"
             raise ValueError(msg)
         return v
 
@@ -102,3 +101,8 @@ class ProcessedDocument(BaseModel):
     document_date: date | None = None
     indexed: bool = False
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("document_date", mode="before")
+    @classmethod
+    def parse_document_date(cls, v: object) -> date | None:
+        return _parse_date(v)
