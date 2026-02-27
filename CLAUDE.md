@@ -51,7 +51,7 @@ ProcessingJob → OCRResult + VisionResult → ReconciledDocument → Classifica
 
 ## Workflow
 
-When working on a task, always create a GitLab issue and a merge request (MR) before starting implementation. Use `glab` CLI for this.
+When working on a task, always create a GitHub issue and a pull request (PR) before starting implementation. Use `gh` CLI for this.
 
 ## Task breakdown
 
