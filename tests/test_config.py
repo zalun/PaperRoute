@@ -8,6 +8,7 @@ import yaml
 
 from docproc.config import (
     Config,
+    _find_project_root,
     _process_env_vars,
     _reset_config,
     _substitute_env_vars,
@@ -127,7 +128,7 @@ def test_load_config_loads_recipients(mock_load_dotenv, config_dir):
 @mock.patch("docproc.config.load_dotenv")
 def test_load_config_caches_singleton(mock_load_dotenv, config_dir):
     config1 = load_config(config_dir / "config.yaml")
-    config2 = load_config(config_dir / "config.yaml")
+    config2 = load_config()
     assert config1 is config2
 
 
@@ -155,12 +156,12 @@ def test_load_config_raises_on_missing_watch_dir(mock_load_dotenv, tmp_path):
 def test_load_config_raises_on_empty_recipients(mock_load_dotenv, config_dir):
     config_data = {**MINIMAL_CONFIG, "recipients": []}
     (config_dir / "config.yaml").write_text(yaml.dump(config_data))
-    with pytest.raises(ValueError, match="Recipients"):
+    with pytest.raises(ValueError, match="Invalid configuration"):
         load_config(config_dir / "config.yaml")
 
 
-def test_load_config_raises_on_missing_env_var(config_dir):
-    config_data = MINIMAL_CONFIG.copy()
+@mock.patch("docproc.config.load_dotenv")
+def test_load_config_raises_on_missing_env_var(mock_load_dotenv, config_dir):
     config_data = {
         **MINIMAL_CONFIG,
         "deepfellow": {**MINIMAL_CONFIG["deepfellow"], "api_key": "${NONEXISTENT}"},
@@ -168,9 +169,39 @@ def test_load_config_raises_on_missing_env_var(config_dir):
     (config_dir / "config.yaml").write_text(yaml.dump(config_data))
     with (
         mock.patch.dict("os.environ", {}, clear=True),
-        mock.patch("docproc.config.load_dotenv"),
         pytest.raises(ValueError, match="NONEXISTENT"),
     ):
+        load_config(config_dir / "config.yaml")
+
+
+@mock.patch("docproc.config.load_dotenv")
+def test_load_config_raises_on_blank_api_key(mock_load_dotenv, config_dir):
+    config_data = {
+        **MINIMAL_CONFIG,
+        "deepfellow": {**MINIMAL_CONFIG["deepfellow"], "api_key": "   "},
+    }
+    (config_dir / "config.yaml").write_text(yaml.dump(config_data))
+    with pytest.raises(ValueError, match="Invalid configuration"):
+        load_config(config_dir / "config.yaml")
+
+
+@mock.patch("docproc.config.load_dotenv")
+def test_load_config_raises_on_empty_yaml(mock_load_dotenv, config_dir):
+    (config_dir / "config.yaml").write_text("")
+    with pytest.raises(ValueError, match="empty or invalid"):
+        load_config(config_dir / "config.yaml")
+
+
+@mock.patch("docproc.config.load_dotenv")
+def test_load_config_raises_on_missing_config_file(mock_load_dotenv, tmp_path):
+    with pytest.raises(FileNotFoundError, match="Configuration file not found"):
+        load_config(tmp_path / "nonexistent.yaml")
+
+
+@mock.patch("docproc.config.load_dotenv")
+def test_load_config_raises_on_invalid_yaml(mock_load_dotenv, config_dir):
+    (config_dir / "config.yaml").write_text("{{invalid: yaml: [")
+    with pytest.raises(ValueError, match="Failed to parse"):
         load_config(config_dir / "config.yaml")
 
 
@@ -192,12 +223,21 @@ def test_find_project_root_raises_when_no_config_found(tmp_path):
     fake_file.parent.mkdir(parents=True)
     fake_file.touch()
     import docproc.config as config_module
-    from docproc.config import _find_project_root
 
-    original = config_module.__file__
-    config_module.__file__ = str(fake_file)
-    try:
-        with pytest.raises(FileNotFoundError, match="config.yaml"):
-            _find_project_root()
-    finally:
-        config_module.__file__ = original
+    with (
+        mock.patch.object(config_module, "__file__", str(fake_file)),
+        pytest.raises(FileNotFoundError, match="config.yaml"),
+    ):
+        _find_project_root()
+
+
+def test_find_project_root_finds_config_in_parent(tmp_path):
+    (tmp_path / "config.yaml").touch()
+    fake_file = tmp_path / "src" / "pkg" / "module.py"
+    fake_file.parent.mkdir(parents=True)
+    fake_file.touch()
+    import docproc.config as config_module
+
+    with mock.patch.object(config_module, "__file__", str(fake_file)):
+        root = _find_project_root()
+    assert root == tmp_path

@@ -10,19 +10,21 @@ from pathlib import Path
 
 import yaml
 from dotenv import load_dotenv
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 _ENV_VAR_PATTERN = re.compile(r"\$\{([^}]+)\}")
 
-_config: Config | None = None
-
 
 class DirectoriesConfig(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     watch: Path
     output: Path
 
 
 class DeepfellowConfig(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     base_url: str
     responses_endpoint: str
     api_key: str
@@ -30,16 +32,31 @@ class DeepfellowConfig(BaseModel):
     llm_model: str
     rag_collection: str
 
+    @field_validator("api_key")
+    @classmethod
+    def api_key_must_not_be_blank(cls, v: str) -> str:
+        if not v.strip():
+            msg = "API key must not be blank"
+            raise ValueError(msg)
+        return v
+
 
 class Recipient(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     name: str
     tags: list[str]
 
 
 class Config(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     directories: DirectoriesConfig
     deepfellow: DeepfellowConfig
-    recipients: list[Recipient]
+    recipients: list[Recipient] = Field(min_length=1)
+
+
+_config: Config | None = None
 
 
 def _substitute_env_vars(value: str) -> str:
@@ -96,22 +113,16 @@ def _resolve_paths(config: Config, root: Path) -> Config:
 
 
 def _validate_config(config: Config) -> None:
-    """Validate configuration constraints."""
+    """Validate runtime constraints that depend on the environment."""
     if not config.directories.watch.exists():
         msg = f"Watch directory does not exist: {config.directories.watch}"
         raise FileNotFoundError(msg)
-    if not config.recipients:
-        msg = "Recipients list must not be empty"
-        raise ValueError(msg)
-    if not config.deepfellow.api_key.strip():
-        msg = "API key must not be blank"
-        raise ValueError(msg)
 
 
 def load_config(config_path: Path | None = None) -> Config:
     """Load, parse, validate, and cache the configuration."""
     global _config
-    if _config is not None:
+    if _config is not None and config_path is None:
         return _config
 
     load_dotenv()
@@ -124,9 +135,28 @@ def load_config(config_path: Path | None = None) -> Config:
 
     root = config_path.parent
 
-    raw = yaml.safe_load(config_path.read_text())
+    if not config_path.is_file():
+        msg = f"Configuration file not found: {config_path}"
+        raise FileNotFoundError(msg)
+
+    try:
+        raw = yaml.safe_load(config_path.read_text())
+    except yaml.YAMLError as e:
+        msg = f"Failed to parse configuration file {config_path}: {e}"
+        raise ValueError(msg) from e
+
+    if not isinstance(raw, dict):
+        msg = f"Configuration file is empty or invalid: {config_path}"
+        raise ValueError(msg)
+
     processed = _process_env_vars(raw)
-    config = Config.model_validate(processed)
+
+    try:
+        config = Config.model_validate(processed)
+    except Exception as e:
+        msg = f"Invalid configuration in {config_path}: {e}"
+        raise ValueError(msg) from e
+
     config = _resolve_paths(config, root)
     _validate_config(config)
 
