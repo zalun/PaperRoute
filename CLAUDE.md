@@ -10,6 +10,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 uv sync                              # Install dependencies
+uv run pytest                        # Run tests (coverage must stay ≥80%)
+uv run ruff check src/ tests/        # Lint
+uv run ruff format --check src/ tests/ # Check formatting
+uv run ruff format src/ tests/        # Auto-fix formatting
+uv run ty check src/                 # Type check
 uv run python -m docproc.watcher     # Start the watcher daemon
 uv run python chat/app.py            # Start the Gradio chat frontend (port 7860)
 ```
@@ -51,7 +56,19 @@ ProcessingJob → OCRResult + VisionResult → ReconciledDocument → Classifica
 
 ## Workflow
 
-When working on a task, always create a GitLab issue and a merge request (MR) before starting implementation. Use `glab` CLI for this.
+When working on a task, always create a GitHub issue and a pull request (PR) before starting implementation. Use `gh` CLI for this.
+
+### Versioning
+- Version follows `0.1.x` during initial development. Bump the patch version in both `pyproject.toml` and `src/docproc/__init__.py` after each task.
+- Update `CHANGELOG.md` (Keep a Changelog format) with every task.
+
+### Testing
+See [`docs/TESTING.md`](docs/TESTING.md) for full conventions. Key rules: pytest functions (no classes), `mock.patch` decorator, `assert` directly (never magic assert methods), `pytest.mark.parametrize` for multiple inputs.
+
+### Quality gates
+- Test coverage must stay at or above **80%** (`--cov-fail-under=80`).
+- `ruff check` and `ruff format --check` must pass with no errors.
+- `ty check` must pass with no errors.
 
 ## Task breakdown
 
