@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.1.2] - 2026-02-27
 
 ### Added
-- `config.yaml` with project configuration
+- `config-example.yaml` with example project configuration (`config.yaml` is gitignored)
 - `src/docproc/config.py` — typed configuration loader with Pydantic models
 - Environment variable substitution (`${VAR}`) with dotenv support
 - Path resolution against project root
