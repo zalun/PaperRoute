@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.3] - 2026-02-27
+
+### Added
+- `src/docproc/models.py` — Pydantic data models for the processing pipeline
+- Models: ProcessingJob, PageText, OCRResult, VisionResult, ReconciledDocument, Classification, ProcessedDocument
+- Date parsing helper supporting ISO, European, and dot-separated formats
+- Full test suite for all models (~25 tests)
+
 ## [0.1.2] - 2026-02-27
 
 ### Added
