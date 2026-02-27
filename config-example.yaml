@@ -1,0 +1,15 @@
+directories:
+  watch: "./inbox"
+  output: "./output"
+
+deepfellow:
+  base_url: "http://localhost:8000"
+  responses_endpoint: "/v1/responses"
+  api_key: "${DEEPFELLOW_API_KEY}"
+  vision_model: "gpt-4-vision"
+  llm_model: "deepseek"
+  rag_collection: "documents"
+
+recipients:
+  - name: "Piotr Zalewa"
+    tags: ["aquarium", "fish", "reef"]
