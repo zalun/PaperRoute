@@ -25,12 +25,12 @@ class DirectoriesConfig(BaseModel):
 class DeepfellowConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    base_url: str
-    responses_endpoint: str
+    base_url: str = Field(min_length=1)
+    responses_endpoint: str = Field(min_length=1)
     api_key: str
-    vision_model: str
-    llm_model: str
-    rag_collection: str
+    vision_model: str = Field(min_length=1)
+    llm_model: str = Field(min_length=1)
+    rag_collection: str = Field(min_length=1)
 
     @field_validator("api_key")
     @classmethod
@@ -46,6 +46,15 @@ class Recipient(BaseModel):
 
     name: str = Field(min_length=1)
     tags: tuple[str, ...] = Field(min_length=1)
+
+    @field_validator("tags")
+    @classmethod
+    def tags_must_not_contain_blanks(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        for tag in v:
+            if not tag.strip():
+                msg = "Tags must not contain blank strings"
+                raise ValueError(msg)
+        return v
 
 
 class Config(BaseModel):
@@ -122,8 +131,11 @@ def _validate_config(config: Config) -> None:
 def load_config(config_path: Path | None = None) -> Config:
     """Load, parse, validate, and cache the configuration."""
     global _config
-    if _config is not None and config_path is None:
-        return _config
+    if _config is not None:
+        if config_path is None:
+            return _config
+        msg = "Configuration is already loaded. Call _reset_config() first to reload."
+        raise RuntimeError(msg)
 
     load_dotenv()
 
@@ -155,7 +167,11 @@ def load_config(config_path: Path | None = None) -> Config:
         msg = f"Configuration file is empty or invalid: {config_path}"
         raise ValueError(msg)
 
-    processed = _process_env_vars(raw)
+    try:
+        processed = _process_env_vars(raw)
+    except ValueError as e:
+        msg = f"Invalid configuration in {config_path}: {e}"
+        raise ValueError(msg) from e
 
     try:
         config = Config.model_validate(processed)
