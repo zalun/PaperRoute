@@ -21,6 +21,7 @@ MINIMAL_CONFIG = {
     "deepfellow": {
         "base_url": "http://localhost:8000",
         "responses_endpoint": "/v1/responses",
+        "ocr_endpoint": "/v1/ocr",
         "api_key": "test-key",
         "vision_model": "gpt-4-vision",
         "llm_model": "deepseek",
