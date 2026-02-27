@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import httpx
+from pydantic import ValidationError
 
 from docproc.config import Config
 from docproc.models import OCRResult, PageText
@@ -60,12 +61,12 @@ def _parse_response(data: dict[str, Any]) -> OCRResult:
             PageText(page_number=p["page_number"], text=p["text"])
             for p in data["pages"]
         ]
-    except (KeyError, TypeError) as exc:
+        full_text = "\n\n".join(p.text for p in pages)
+        confidence = data.get("confidence")
+        return OCRResult(text=full_text, pages=pages, confidence=confidence)
+    except (KeyError, TypeError, ValidationError) as exc:
         msg = f"Malformed OCR response: {exc}"
         raise OCRError(msg) from exc
-    full_text = "\n\n".join(p.text for p in pages)
-    confidence = data.get("confidence")
-    return OCRResult(text=full_text, pages=pages, confidence=confidence)
 
 
 async def _send_with_retry(

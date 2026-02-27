@@ -152,6 +152,12 @@ def test_parse_response_raises_on_malformed_page_entry():
         _parse_response(data)
 
 
+def test_parse_response_raises_on_invalid_page_number():
+    data = {"pages": [{"page_number": 0, "text": "zero page"}]}
+    with pytest.raises(OCRError, match="Malformed OCR response"):
+        _parse_response(data)
+
+
 # --- extract_text (integration, mocked HTTP) ---
 
 
