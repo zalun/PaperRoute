@@ -21,7 +21,11 @@ Confidence = Annotated[float, Field(ge=0.0, le=1.0)]
 
 def _parse_date(value: object) -> date | None:
     """Try ISO format first, then common date formats."""
-    if value is None or isinstance(value, date):
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
         return value
     if not isinstance(value, str):
         msg = f"Cannot parse date from {type(value).__name__}"
@@ -44,6 +48,15 @@ class ProcessingJob(BaseModel):
 
     file_path: Path
     file_type: str = Field(min_length=1)
+
+    @field_validator("file_type")
+    @classmethod
+    def file_type_must_not_be_blank(cls, v: str) -> str:
+        if not v.strip():
+            msg = "file_type must not be blank"
+            raise ValueError(msg)
+        return v
+
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     status: Literal["pending", "processing", "done", "failed"] = "pending"
 
@@ -87,10 +100,11 @@ class Classification(BaseModel):
     @field_validator("recipient", "category", "subject")
     @classmethod
     def must_not_be_blank(cls, v: str) -> str:
-        if not v.strip():
+        stripped = v.strip()
+        if not stripped:
             msg = "Field must not be blank"
             raise ValueError(msg)
-        return v
+        return stripped
 
 
 class ProcessedDocument(BaseModel):

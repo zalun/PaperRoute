@@ -57,9 +57,10 @@ def test_processing_job_rejects_invalid_status_on_assignment():
         job.status = "invalid"
 
 
-def test_processing_job_rejects_empty_file_type():
+@pytest.mark.parametrize("file_type", ["", "   "])
+def test_processing_job_rejects_blank_file_type(file_type):
     with pytest.raises(ValidationError):
-        ProcessingJob(file_path="/tmp/doc.pdf", file_type="")
+        ProcessingJob(file_path="/tmp/doc.pdf", file_type=file_type)
 
 
 def test_processing_job_json_roundtrip():
@@ -164,6 +165,12 @@ def test_reconciled_document_rejects_non_string_date():
         ReconciledDocument(markdown="text", document_date=12345)
 
 
+def test_reconciled_document_converts_datetime_to_date():
+    dt = datetime(2024, 3, 15, 10, 30, tzinfo=UTC)
+    doc = ReconciledDocument(markdown="text", document_date=dt)
+    assert doc.document_date == date(2024, 3, 15)
+
+
 # --- Classification ---
 
 
@@ -196,6 +203,15 @@ def test_classification_rejects_whitespace_only_strings(field):
     kwargs[field] = "   "
     with pytest.raises(ValidationError):
         Classification(**kwargs)
+
+
+def test_classification_strips_whitespace():
+    cls = Classification(
+        recipient="  Alice  ", category="  invoices  ", subject="  Water bill  "
+    )
+    assert cls.recipient == "Alice"
+    assert cls.category == "invoices"
+    assert cls.subject == "Water bill"
 
 
 def test_classification_defaults_optionals_to_none():
