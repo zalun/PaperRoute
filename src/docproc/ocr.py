@@ -30,9 +30,9 @@ class OCRError(Exception):
 
 
 def _validate_file(file_path: Path) -> None:
-    """Check that the file exists and has a supported extension."""
-    if not file_path.exists():
-        msg = f"File not found: {file_path}"
+    """Check that the file exists, is a regular file, and has a supported extension."""
+    if not file_path.is_file():
+        msg = f"File not found or not a regular file: {file_path}"
         raise OCRError(msg)
     ext = file_path.suffix.lower()
     if ext not in SUPPORTED_EXTENSIONS:
@@ -51,10 +51,18 @@ def _build_url(config: Config) -> str:
 
 def _parse_response(data: dict[str, Any]) -> OCRResult:
     """Convert API JSON response to an OCRResult."""
-    pages = [
-        PageText(page_number=p["page_number"], text=p["text"])
-        for p in data.get("pages", [])
-    ]
+    if "pages" not in data:
+        keys = list(data.keys())
+        msg = f"Malformed OCR response: missing 'pages' key. Response keys: {keys}"
+        raise OCRError(msg)
+    try:
+        pages = [
+            PageText(page_number=p["page_number"], text=p["text"])
+            for p in data["pages"]
+        ]
+    except (KeyError, TypeError) as exc:
+        msg = f"Malformed OCR response: {exc}"
+        raise OCRError(msg) from exc
     full_text = "\n\n".join(p.text for p in pages)
     confidence = data.get("confidence")
     return OCRResult(text=full_text, pages=pages, confidence=confidence)
@@ -67,12 +75,17 @@ async def _send_with_retry(
     api_key: str,
 ) -> dict[str, Any]:
     """POST the file with exponential backoff retry on 5xx/timeouts."""
+    try:
+        file_bytes = file_path.read_bytes()
+    except OSError as exc:
+        msg = f"Failed to read file {file_path}: {exc}"
+        raise OCRError(msg) from exc
+
     delay = _INITIAL_DELAY
     last_error: Exception | None = None
 
     for attempt in range(1, _MAX_RETRIES + 1):
         try:
-            file_bytes = file_path.read_bytes()
             files = {"file": (file_path.name, file_bytes)}
             headers = {"Authorization": f"Bearer {api_key}"}
             response = await client.post(
@@ -87,7 +100,12 @@ async def _send_with_retry(
                     f"Server error {response.status_code}: {response.text}"
                 )
                 logger.warning(
-                    "OCR attempt %d/%d failed: %s", attempt, _MAX_RETRIES, last_error
+                    "OCR attempt %d/%d for '%s' failed (HTTP %d): %s",
+                    attempt,
+                    _MAX_RETRIES,
+                    file_path.name,
+                    response.status_code,
+                    response.text[:200],
                 )
                 if attempt < _MAX_RETRIES:
                     await asyncio.sleep(delay)
@@ -98,16 +116,35 @@ async def _send_with_retry(
                 msg = f"Client error {response.status_code}: {response.text}"
                 raise OCRError(msg)
 
-            return response.json()
+            try:
+                return response.json()
+            except ValueError as exc:
+                msg = (
+                    f"OCR API returned non-JSON response "
+                    f"(status {response.status_code}): {response.text[:200]}"
+                )
+                raise OCRError(msg) from exc
 
-        except httpx.TimeoutException as exc:
-            last_error = OCRError(f"Request timed out: {exc}")
-            logger.warning("OCR attempt %d/%d timed out", attempt, _MAX_RETRIES)
+        except httpx.TransportError as exc:
+            last_error = OCRError(f"Transport error: {exc}")
+            logger.warning(
+                "OCR attempt %d/%d for '%s' failed with transport error: %s",
+                attempt,
+                _MAX_RETRIES,
+                file_path.name,
+                exc,
+            )
             if attempt < _MAX_RETRIES:
                 await asyncio.sleep(delay)
                 delay *= _BACKOFF_FACTOR
 
     msg = f"OCR failed after {_MAX_RETRIES} attempts"
+    logger.error(
+        "OCR extraction failed for '%s' after %d attempts: %s",
+        file_path.name,
+        _MAX_RETRIES,
+        last_error,
+    )
     raise OCRError(msg) from last_error
 
 
