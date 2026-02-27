@@ -8,8 +8,8 @@ Create `config.yaml` and the `config.py` loader that reads it, supports environm
 
 ## Files to Create
 
-- `/Users/piotrzalewa/Projects/PDF/config.yaml`
-- `/Users/piotrzalewa/Projects/PDF/src/docproc/config.py`
+- `config.yaml`
+- `src/docproc/config.py`
 
 ## Details
 
@@ -17,7 +17,7 @@ Create `config.yaml` and the `config.py` loader that reads it, supports environm
 
 ```yaml
 directories:
-  watch: "./doc-holder"
+  watch: "./inbox"
   output: "./output"
 
 deepfellow:
@@ -39,7 +39,7 @@ recipients:
 
 1. **Environment variable substitution**: Parse `${VAR_NAME}` patterns in string values and replace with `os.environ` lookups. Use `python-dotenv` to load `.env` file if present.
 
-2. **Path resolution**: Resolve relative paths (`./doc-holder`) against the project root, not CWD.
+2. **Path resolution**: Resolve relative paths (`./inbox`) against the project root, not CWD.
 
 3. **Typed config object**: Use Pydantic models or a dataclass to provide typed access:
    ```python

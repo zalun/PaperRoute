@@ -16,24 +16,24 @@ A document processing daemon that watches a directory, extracts content via OCR 
 ## Project Structure
 
 ```
-/Users/piotrzalewa/Projects/PDF/doc-holder
+PaperRoute/
 ├── pyproject.toml
-├── config.yaml                 # Recipients, tags, directories
+├── config.yaml                         # Recipients, tags, directories
 ├── src/
 │   └── docproc/
 │       ├── __init__.py
-│       ├── watcher.py          # Directory watcher daemon
-│       ├── ocr.py              # DeepFellow easyOCR processing
-│       ├── vision.py           # Vision model extraction
-│       ├── reconciler.py       # LLM reconciliation of OCR + Vision
-│       ├── classifier.py       # Recipient/subject classification
-│       ├── rag.py              # RAG indexing client
-│       ├── config.py           # Configuration loader
-│       └── models.py           # Pydantic models
+│       ├── watcher.py                  # Directory watcher daemon
+│       ├── ocr.py                      # DeepFellow easyOCR processing
+│       ├── vision.py                   # Vision model extraction
+│       ├── reconciler.py               # LLM reconciliation of OCR + Vision
+│       ├── classifier.py               # Recipient/subject classification
+│       ├── rag.py                      # RAG indexing client
+│       ├── config.py                   # Configuration loader
+│       └── models.py                   # Pydantic models
 ├── chat/
-│   └── app.py                  # Chat frontend
-├── doc-holder/                 # Input: watched directory (existing)
-└── output/                     # Output: organized documents
+│   └── app.py                          # Chat frontend
+├── inbox/                              # Input: watched directory
+└── output/                             # Output: organized documents
     └── {recipient}/{category}/{date}-{subject}.md
 ```
 
@@ -41,7 +41,7 @@ A document processing daemon that watches a directory, extracts content via OCR 
 
 ```yaml
 directories:
-  watch: "./doc-holder"
+  watch: "./inbox"
   output: "./output"
 
 deepfellow:
@@ -63,7 +63,7 @@ recipients:
 
 ### 1. Watcher Daemon (`watcher.py`)
 
-- Uses `watchdog` library to monitor `doc-holder/` directory
+- Uses `watchdog` library to monitor `inbox/` directory
 - Triggers processing pipeline on new PDF/image files
 - Handles file locking to prevent duplicate processing
 - Runs as a daemon (can be managed via systemd or supervisor)
@@ -113,7 +113,7 @@ recipients:
 
 ```
 ┌─────────────────┐
-│  doc-holder/    │  ← New file detected
+│  inbox/         │  ← New file detected
 │  (input)        │
 └────────┬────────┘
          │
@@ -190,11 +190,11 @@ dependencies = [
 
 ## Verification
 
-1. **Unit tests**: Drop test PDF into `doc-holder/`, verify output structure
+1. **Unit tests**: Drop test PDF into `inbox/`, verify output structure
 2. **Integration test**: Process document end-to-end, query via chat
 3. **Manual verification**:
    - `uv run python -m docproc.watcher` - Start daemon
-   - Copy a PDF to `doc-holder/`
+   - Copy a PDF to `inbox/`
    - Check `output/` for organized files
    - `uv run python chat/app.py` - Start chat, query about document
 

@@ -8,7 +8,7 @@ Implement the Vision model client that sends document images to a vision-capable
 
 ## Files to Create
 
-- `/Users/piotrzalewa/Projects/PDF/src/docproc/vision.py`
+- `src/docproc/vision.py`
 
 ## Details
 

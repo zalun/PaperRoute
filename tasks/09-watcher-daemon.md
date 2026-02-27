@@ -4,11 +4,11 @@
 
 ## Summary
 
-Implement the filesystem watcher daemon that monitors the `doc-holder/` directory for new files and orchestrates the full processing pipeline. This is the main entry point of the system.
+Implement the filesystem watcher daemon that monitors the `inbox/` directory for new files and orchestrates the full processing pipeline. This is the main entry point of the system.
 
 ## Files to Create
 
-- `/Users/piotrzalewa/Projects/PDF/src/docproc/watcher.py`
+- `src/docproc/watcher.py`
 
 ## Details
 
@@ -148,7 +148,7 @@ output/
 
 ## Acceptance Criteria
 
-- [ ] Detects new files in `doc-holder/` directory in real-time
+- [ ] Detects new files in `inbox/` directory in real-time
 - [ ] Filters by supported file types (PDF, PNG, JPG, TIFF)
 - [ ] Ignores temp files, hidden files, and partial downloads
 - [ ] Debounces file events to avoid processing incomplete files

@@ -8,7 +8,7 @@ Implement the classifier that analyzes reconciled document content via LLM to de
 
 ## Files to Create
 
-- `/Users/piotrzalewa/Projects/PDF/src/docproc/classifier.py`
+- `src/docproc/classifier.py`
 
 ## Details
 

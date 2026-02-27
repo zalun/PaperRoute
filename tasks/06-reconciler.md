@@ -8,7 +8,7 @@ Implement the reconciler that takes both OCR and Vision outputs and uses an LLM 
 
 ## Files to Create
 
-- `/Users/piotrzalewa/Projects/PDF/src/docproc/reconciler.py`
+- `src/docproc/reconciler.py`
 
 ## Details
 

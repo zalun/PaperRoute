@@ -8,8 +8,8 @@ Bootstrap the Python project with `uv`, create `pyproject.toml`, and establish t
 
 ## Files to Create
 
-- `/Users/piotrzalewa/Projects/PDF/pyproject.toml`
-- `/Users/piotrzalewa/Projects/PDF/src/docproc/__init__.py`
+- `pyproject.toml`
+- `src/docproc/__init__.py`
 
 ## Details
 
@@ -38,7 +38,7 @@ Key decisions:
 ### Directory Structure
 
 ```
-/Users/piotrzalewa/Projects/PDF/
+PaperRoute/
 ├── pyproject.toml
 ├── config.yaml
 ├── src/
@@ -54,8 +54,8 @@ Key decisions:
 │       └── models.py
 ├── chat/
 │   └── app.py
-├── doc-holder/          # Input: watched directory (already exists)
-└── output/              # Output: organized documents
+├── inbox/                           # Input: watched directory
+└── output/                          # Output: organized documents
     └── {recipient}/{category}/{date}-{subject}.md
 ```
 
@@ -68,7 +68,7 @@ Should expose the main pipeline entry point and version string. Keep minimal —
 - [ ] `uv sync` succeeds without errors
 - [ ] `uv run python -c "import docproc"` works
 - [ ] All dependencies listed in pyproject.toml are resolvable
-- [ ] `doc-holder/` and `output/` directories exist
+- [ ] `inbox/` and `output/` directories exist
 
 ## Dependencies
 

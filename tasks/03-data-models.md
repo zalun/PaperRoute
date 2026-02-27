@@ -8,7 +8,7 @@ Define all Pydantic models that flow through the processing pipeline. These mode
 
 ## Files to Create
 
-- `/Users/piotrzalewa/Projects/PDF/src/docproc/models.py`
+- `src/docproc/models.py`
 
 ## Details
 
@@ -19,7 +19,7 @@ Represents a single document being processed through the pipeline.
 
 ```python
 class ProcessingJob(BaseModel):
-    file_path: Path                # Original file in doc-holder/
+    file_path: Path                # Original file in inbox/
     file_type: str                 # "pdf", "png", "jpg", etc.
     created_at: datetime           # When processing started
     status: Literal["pending", "processing", "done", "failed"]

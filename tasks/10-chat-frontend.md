@@ -8,7 +8,7 @@ Implement the Gradio-based chat interface that allows users to select a recipien
 
 ## Files to Create
 
-- `/Users/piotrzalewa/Projects/PDF/chat/app.py`
+- `chat/app.py`
 
 ## Details
 

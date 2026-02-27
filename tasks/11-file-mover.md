@@ -61,7 +61,7 @@ output/Common/insurance/2025-03-01-home-insurance-renewal.pdf
      ```
 
 5. **Copy original file**:
-   - Copy (not move) the original from `doc-holder/` to output alongside the `.md`.
+   - Copy (not move) the original from `inbox/` to output alongside the `.md`.
    - Use same base name with original extension.
    - Consider: should originals be moved or copied? Copying is safer.
 

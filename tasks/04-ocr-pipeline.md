@@ -8,7 +8,7 @@ Implement the OCR extraction module that sends documents to DeepFellow's easyOCR
 
 ## Files to Create
 
-- `/Users/piotrzalewa/Projects/PDF/src/docproc/ocr.py`
+- `src/docproc/ocr.py`
 
 ## Details
 

@@ -8,7 +8,7 @@ Implement the RAG indexing client that stores processed documents into DeepFello
 
 ## Files to Create
 
-- `/Users/piotrzalewa/Projects/PDF/src/docproc/rag.py`
+- `src/docproc/rag.py`
 
 ## Details
 

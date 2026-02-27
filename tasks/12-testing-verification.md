@@ -4,7 +4,7 @@
 
 ## Summary
 
-Verify the entire system works end-to-end: drop a document into `doc-holder/`, confirm it gets processed, classified, saved, and indexed, then query it through the chat frontend.
+Verify the entire system works end-to-end: drop a document into `inbox/`, confirm it gets processed, classified, saved, and indexed, then query it through the chat frontend.
 
 ## Details
 
@@ -64,7 +64,7 @@ End-to-end test with a real document:
 uv run python -m docproc.watcher &
 
 # 2. Drop a test PDF
-cp test-documents/sample-invoice.pdf doc-holder/
+cp test-documents/sample-invoice.pdf inbox/
 
 # 3. Wait for processing (watch logs)
 sleep 10
@@ -83,7 +83,7 @@ uv run python chat/app.py &
 
 - [ ] `uv sync` — all dependencies install cleanly
 - [ ] `uv run python -m docproc.watcher` — daemon starts, logs "Watching..."
-- [ ] Copy PDF to `doc-holder/` — daemon detects it within seconds
+- [ ] Copy PDF to `inbox/` — daemon detects it within seconds
 - [ ] Logs show: OCR running, Vision running, Reconciling, Classifying, Saving, Indexing
 - [ ] `output/` has correct directory structure: `{recipient}/{category}/{date}-{subject}.md`
 - [ ] Markdown file has YAML frontmatter with correct metadata
