@@ -10,7 +10,7 @@ from pathlib import Path
 
 import yaml
 from dotenv import load_dotenv
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 _ENV_VAR_PATTERN = re.compile(r"\$\{([^}]+)\}")
 
@@ -44,8 +44,8 @@ class DeepfellowConfig(BaseModel):
 class Recipient(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    name: str
-    tags: list[str]
+    name: str = Field(min_length=1)
+    tags: tuple[str, ...] = Field(min_length=1)
 
 
 class Config(BaseModel):
@@ -53,7 +53,7 @@ class Config(BaseModel):
 
     directories: DirectoriesConfig
     deepfellow: DeepfellowConfig
-    recipients: list[Recipient] = Field(min_length=1)
+    recipients: tuple[Recipient, ...] = Field(min_length=1)
 
 
 _config: Config | None = None
@@ -140,7 +140,13 @@ def load_config(config_path: Path | None = None) -> Config:
         raise FileNotFoundError(msg)
 
     try:
-        raw = yaml.safe_load(config_path.read_text())
+        text = config_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as e:
+        msg = f"Failed to read configuration file {config_path}: {e}"
+        raise ValueError(msg) from e
+
+    try:
+        raw = yaml.safe_load(text)
     except yaml.YAMLError as e:
         msg = f"Failed to parse configuration file {config_path}: {e}"
         raise ValueError(msg) from e
@@ -153,7 +159,7 @@ def load_config(config_path: Path | None = None) -> Config:
 
     try:
         config = Config.model_validate(processed)
-    except Exception as e:
+    except ValidationError as e:
         msg = f"Invalid configuration in {config_path}: {e}"
         raise ValueError(msg) from e
 

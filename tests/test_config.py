@@ -122,7 +122,7 @@ def test_load_config_loads_recipients(mock_load_dotenv, config_dir):
     config = load_config(config_dir / "config.yaml")
     assert len(config.recipients) == 1
     assert config.recipients[0].name == "Test User"
-    assert config.recipients[0].tags == ["tag1", "tag2"]
+    assert config.recipients[0].tags == ("tag1", "tag2")
 
 
 @mock.patch("docproc.config.load_dotenv")
@@ -213,6 +213,17 @@ def test_get_config_returns_cached_instance(mock_load_dotenv, config_dir):
     config1 = load_config(config_dir / "config.yaml")
     config2 = get_config()
     assert config1 is config2
+
+
+@mock.patch("docproc.config.load_dotenv")
+def test_get_config_loads_on_first_call(mock_load_dotenv, config_dir):
+    import docproc.config as config_module
+
+    with mock.patch.object(
+        config_module, "_find_project_root", return_value=config_dir
+    ):
+        config = get_config()
+    assert isinstance(config, Config)
 
 
 # --- _find_project_root ---
