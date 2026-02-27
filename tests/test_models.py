@@ -63,6 +63,11 @@ def test_processing_job_rejects_blank_file_type(file_type):
         ProcessingJob(file_path="/tmp/doc.pdf", file_type=file_type)
 
 
+def test_processing_job_strips_and_lowercases_file_type():
+    job = ProcessingJob(file_path="/tmp/doc.pdf", file_type="  PDF  ")
+    assert job.file_type == "pdf"
+
+
 def test_processing_job_json_roundtrip():
     job = ProcessingJob(file_path="/tmp/doc.pdf", file_type="pdf")
     data = job.model_dump_json()
@@ -140,8 +145,11 @@ def test_reconciled_document_creates_with_markdown_only():
     "date_str,expected",
     [
         ("2024-03-15", date(2024, 3, 15)),
+        ("2024-03-15T10:30:00", date(2024, 3, 15)),
+        ("2024-03-15T00:00:00Z", date(2024, 3, 15)),
         ("15/03/2024", date(2024, 3, 15)),
         ("15.03.2024", date(2024, 3, 15)),
+        ("  2024-03-15  ", date(2024, 3, 15)),
     ],
 )
 def test_reconciled_document_parses_date_formats(date_str, expected):
@@ -169,6 +177,14 @@ def test_reconciled_document_converts_datetime_to_date():
     dt = datetime(2024, 3, 15, 10, 30, tzinfo=UTC)
     doc = ReconciledDocument(markdown="text", document_date=dt)
     assert doc.document_date == date(2024, 3, 15)
+
+
+def test_reconciled_document_validates_date_on_assignment():
+    doc = ReconciledDocument(markdown="text", document_date="2024-03-15")
+    doc.document_date = "15/03/2024"
+    assert doc.document_date == date(2024, 3, 15)
+    with pytest.raises(ValidationError):
+        doc.document_date = "not-a-date"
 
 
 # --- Classification ---
@@ -212,6 +228,14 @@ def test_classification_strips_whitespace():
     assert cls.recipient == "Alice"
     assert cls.category == "invoices"
     assert cls.subject == "Water bill"
+
+
+def test_classification_validates_on_assignment():
+    cls = Classification(recipient="Alice", category="invoices", subject="Bill")
+    cls.recipient = "  Bob  "
+    assert cls.recipient == "Bob"
+    with pytest.raises(ValidationError):
+        cls.recipient = "   "
 
 
 def test_classification_defaults_optionals_to_none():

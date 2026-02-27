@@ -30,8 +30,16 @@ def _parse_date(value: object) -> date | None:
     if not isinstance(value, str):
         msg = f"Cannot parse date from {type(value).__name__}"
         raise ValueError(msg)
+    value = value.strip()
+    if not value:
+        msg = "Cannot parse date from empty string"
+        raise ValueError(msg)
     try:
         return date.fromisoformat(value)
+    except ValueError:
+        pass
+    try:
+        return datetime.fromisoformat(value).date()
     except ValueError:
         pass
     for fmt in _DATE_FORMATS:
@@ -52,10 +60,11 @@ class ProcessingJob(BaseModel):
     @field_validator("file_type")
     @classmethod
     def file_type_must_not_be_blank(cls, v: str) -> str:
-        if not v.strip():
+        stripped = v.strip().lower()
+        if not stripped:
             msg = "file_type must not be blank"
             raise ValueError(msg)
-        return v
+        return stripped
 
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     status: Literal["pending", "processing", "done", "failed"] = "pending"
@@ -79,6 +88,8 @@ class VisionResult(BaseModel):
 
 
 class ReconciledDocument(BaseModel):
+    model_config = ConfigDict(validate_assignment=True)
+
     markdown: str
     document_date: date | None = None
     title: str | None = None
@@ -91,6 +102,8 @@ class ReconciledDocument(BaseModel):
 
 
 class Classification(BaseModel):
+    model_config = ConfigDict(validate_assignment=True)
+
     recipient: str = Field(min_length=1)
     category: str = Field(min_length=1)
     subject: str = Field(min_length=1)
@@ -108,6 +121,8 @@ class Classification(BaseModel):
 
 
 class ProcessedDocument(BaseModel):
+    model_config = ConfigDict(validate_assignment=True)
+
     original_path: Path
     output_path: Path
     markdown: str
