@@ -12,7 +12,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 uv sync                              # Install dependencies
 uv run pytest                        # Run tests (coverage must stay ≥80%)
 uv run ruff check src/ tests/        # Lint
-uv run ruff format src/ tests/       # Format
+uv run ruff format --check src/ tests/ # Check formatting
+uv run ruff format src/ tests/        # Auto-fix formatting
 uv run ty check src/                 # Type check
 uv run python -m docproc.watcher     # Start the watcher daemon
 uv run python chat/app.py            # Start the Gradio chat frontend (port 7860)

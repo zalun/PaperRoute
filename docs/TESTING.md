@@ -77,7 +77,7 @@ mock_post.assert_called_once()
 mock_post.assert_called_with("https://api.example.com/ocr")
 ```
 
-This makes failures more readable and avoids silent passes from typos in magic method names (e.g. `mock.assert_called_onse()` silently succeeds).
+This makes assertion failures more readable — pytest shows the actual vs. expected values directly in the diff output.
 
 ## Parametrize
 
