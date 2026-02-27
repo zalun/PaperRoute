@@ -27,6 +27,7 @@ class DeepfellowConfig(BaseModel):
 
     base_url: str = Field(min_length=1)
     responses_endpoint: str = Field(min_length=1)
+    ocr_endpoint: str = Field(min_length=1)
     api_key: str
     vision_model: str = Field(min_length=1)
     llm_model: str = Field(min_length=1)

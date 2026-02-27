@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.4] - 2026-02-27
+
+### Added
+- `src/docproc/ocr.py` — Async OCR extraction via DeepFellow easyOCR API
+- Retry logic with exponential backoff (3 attempts, 1s initial delay, 2x factor)
+- File validation for supported types (PDF, PNG, JPG, JPEG, TIFF)
+- `ocr_endpoint` field in `DeepfellowConfig`
+- `httpx` as explicit dependency for HTTP calls
+- `pytest-asyncio` dev dependency with `asyncio_mode = "auto"`
+- Test suite for OCR module (~20 tests)
+
 ## [0.1.3] - 2026-02-27
 
 ### Added
