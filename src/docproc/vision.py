@@ -102,7 +102,15 @@ async def _call_vision_api(
                 ],
                 max_tokens=_MAX_TOKENS,
             )
+            if not response.choices:
+                msg = "Vision API returned empty choices"
+                raise VisionError(msg)
             content = response.choices[0].message.content
+            if not content:
+                logger.warning(
+                    "Vision API returned empty content on attempt %d",
+                    attempt,
+                )
             return content or ""
 
         except APIStatusError as exc:

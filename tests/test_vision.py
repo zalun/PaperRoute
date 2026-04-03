@@ -35,7 +35,7 @@ def _make_config(**overrides: str) -> Config:
     )
 
 
-def _mock_completion(content: str = "Extracted text"):
+def _mock_completion(content: str | None = "Extracted text"):
     """Build a mock ChatCompletion response."""
     message = mock.Mock()
     message.content = content
@@ -142,6 +142,25 @@ async def test_call_vision_api_returns_content():
 
     assert result == "# Title\nContent"
     assert client.chat.completions.create.call_count == 1
+
+
+async def test_call_vision_api_raises_on_empty_choices():
+    client = mock.AsyncMock()
+    response = mock.Mock()
+    response.choices = []
+    client.chat.completions.create.return_value = response
+
+    with pytest.raises(VisionError, match="empty choices"):
+        await _call_vision_api(client, "model", "img")
+
+
+async def test_call_vision_api_returns_empty_string_on_none_content():
+    client = mock.AsyncMock()
+    client.chat.completions.create.return_value = _mock_completion(None)
+
+    result = await _call_vision_api(client, "model", "img")
+
+    assert result == ""
 
 
 async def test_call_vision_api_retries_on_5xx():
