@@ -62,6 +62,9 @@ def _pdf_to_images(file_path: Path) -> list[bytes]:
             pix = page.get_pixmap(dpi=_IMAGE_DPI)
             images.append(pix.tobytes("png"))
         return images
+    except Exception as exc:
+        msg = f"Failed to render PDF pages: {file_path}: {exc}"
+        raise VisionError(msg) from exc
     finally:
         doc.close()
 

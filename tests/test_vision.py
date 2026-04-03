@@ -199,6 +199,19 @@ async def test_call_vision_api_retries_on_connection_error():
     assert client.chat.completions.create.call_count == 2
 
 
+async def test_call_vision_api_raises_after_max_connection_errors():
+    client = mock.AsyncMock()
+    client.chat.completions.create.side_effect = APIConnectionError(request=mock.Mock())
+
+    with (
+        mock.patch("docproc.vision.asyncio.sleep", new_callable=mock.AsyncMock),
+        pytest.raises(VisionError, match="failed after 3 attempts"),
+    ):
+        await _call_vision_api(client, "model", "img")
+
+    assert client.chat.completions.create.call_count == 3
+
+
 async def test_call_vision_api_exponential_backoff():
     client = mock.AsyncMock()
     client.chat.completions.create.side_effect = _make_api_status_error(500, "error")
@@ -313,3 +326,32 @@ async def test_extract_with_vision_uses_config_base_url(mock_openai_cls, tmp_pat
     await extract_with_vision(img, _make_config(base_url="http://custom:9000"))
 
     assert mock_openai_cls.call_args.kwargs["base_url"] == "http://custom:9000"
+
+
+async def test_extract_with_vision_raises_on_image_read_failure(tmp_path):
+    img = tmp_path / "unreadable.png"
+    img.write_bytes(b"data")
+    img.chmod(0o000)
+
+    with pytest.raises(VisionError, match="Failed to read file"):
+        await extract_with_vision(img, _make_config())
+
+    img.chmod(0o644)
+
+
+@mock.patch("docproc.vision.pymupdf")
+def test_pdf_to_images_raises_on_render_failure(mock_pymupdf, tmp_path):
+    pdf = tmp_path / "doc.pdf"
+    pdf.write_bytes(b"%PDF-fake")
+
+    mock_page = mock.Mock()
+    mock_page.get_pixmap.side_effect = RuntimeError("render failed")
+
+    mock_doc = mock.MagicMock()
+    mock_doc.__iter__ = mock.Mock(return_value=iter([mock_page]))
+    mock_pymupdf.open.return_value = mock_doc
+
+    with pytest.raises(VisionError, match="Failed to render PDF pages"):
+        _pdf_to_images(pdf)
+
+    assert mock_doc.close.call_count == 1
